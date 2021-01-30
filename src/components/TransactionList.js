@@ -105,12 +105,14 @@ function TransactionList() {
 
             if (index > -1) {
                 const item = newData[index];
+                item.created_at = (new Date()).toLocaleString();
                 newData.splice(index, 1, { ...item, ...row });
                 setData(newData);
                 setEditingKey('');
                 // add api call here to update a record
             } else {
                 // add api call here to save new record
+                row.created_at = (new Date()).toLocaleString();
                 newData.push(row);
                 setData(newData);
                 setEditingKey('');

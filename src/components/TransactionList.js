@@ -4,6 +4,7 @@ import AddEditTransaction from './AddEditTransaction';
 import useFetch from './../hooks/useFetch';
 import uuid from 'react-uuid'
 import ENDPOINTS, { HEADER_OPTIONS } from "./../config/constants";
+import Loader from './Loader'
 
 import { Table, Popconfirm, Form, Typography } from 'antd';
 
@@ -14,9 +15,25 @@ function TransactionList() {
     const [editingKey, setEditingKey] = useState('');
 
     let { response, error, isLoading } = useFetch(ENDPOINTS.getTransaction, "GET", HEADER_OPTIONS);
-    console.log("response ", response);
+
     if (!data && response) {
-        setData(response.map(v => ({ ...v, key: uuid() })))
+        console.log("response ", response);
+
+        const array = response.sort((a, b) => (a.sales_reference - b.sales_reference))
+        let res = new Array();
+        for (let i = 0; i < array.length; i++) {
+            if ((array.length - 1) === i || (array[i + 1].sales_reference - array[i].sales_reference) == 1) {
+                res.push({ ...array[i], key: uuid() })
+            } else {
+                let latesReference = array[i].sales_reference
+                for (let j = 0; j < (array[i + 1].sales_reference - array[i].sales_reference); j++) {
+                    res.push({ sales_reference: latesReference, amount: '', created_at: '', key: uuid() });
+                    latesReference = latesReference + 1;
+                }
+
+            }
+        }
+        setData(res)
     }
 
     const columns = [
@@ -58,7 +75,7 @@ function TransactionList() {
                     </span>
                 ) : (
                         <Typography.Link disabled={editingKey !== ''} onClick={() => edit(record)}>
-                            {record.key ? "Edit" : "Add"}
+                            {record.amount ? "Edit" : "Add"}
                         </Typography.Link>
                     );
             },
@@ -91,7 +108,9 @@ function TransactionList() {
                 newData.splice(index, 1, { ...item, ...row });
                 setData(newData);
                 setEditingKey('');
+                // add api call here to update a record
             } else {
+                // add api call here to save new record
                 newData.push(row);
                 setData(newData);
                 setEditingKey('');
@@ -119,23 +138,26 @@ function TransactionList() {
         };
     });
     return (
-        <div>
-            <Form form={form} component={false}>
-                <Table
-                    components={{
-                        body: {
-                            cell: AddEditTransaction,
-                        },
-                    }}
-                    bordered
-                    dataSource={data}
-                    columns={mergedColumns}
-                    rowClassName="editable-row"
-                    pagination={{
-                        onChange: cancel,
-                    }}
-                />
-            </Form>
+        <div>{
+            isLoading ? <Loader /> :
+                <Form form={form} component={false}>
+                    <Table
+                        components={{
+                            body: {
+                                cell: AddEditTransaction,
+                            },
+                        }}
+                        bordered
+                        dataSource={data}
+                        columns={mergedColumns}
+                        rowClassName="editable-row"
+                        pagination={{
+                            onChange: cancel,
+                        }}
+                    />
+                </Form>
+        }
+
         </div>
     )
 }
